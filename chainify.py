@@ -26,7 +26,7 @@ BIN = "bin"
 MODULES = "modules"
 BINARIES = os.path.join(LOCATION, BIN)
 TEMP_DIR = os.path.join(LOCATION, MODULES, TEMP)
-GITHUB = ""
+GITHUB = "https://github.com/alejandrogzi/chainify.git"
 OUT = "out.txt"
 
 BED_TO_BIGBED = os.path.join(BINARIES,"bedToBigBed")
@@ -57,7 +57,7 @@ VERSION = "--version"
 VBOX_ARGS = "list vms"
 UCSC_GBIB = "https://genome.ucsc.edu/goldenpath/help/gbib.html"
 HTTPS_VBOX = "https://www.virtualbox.org/wiki/Downloads"
-BIG_DATA_URL = "bidDataUrl="
+BIG_DATA_URL = "bigDataUrl="
 LINK_DATA_URL = "linkDataUrl="
 TRACK_TYPE = "track type=bigChain"
 LOCALHOST = "http://127.0.0.1:1234/folders"
@@ -66,7 +66,7 @@ SHARED_FOLDER = "sf_Documents" #Assuming its Documents
 
 
 class Chain:
-    """chainify manager class."""
+    """Chainify manager class."""
     def __init__(self, args):
         self.dependencies = self.__install_dependencies()
         if self.dependencies:
