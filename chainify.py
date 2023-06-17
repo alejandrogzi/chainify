@@ -327,7 +327,7 @@ def parse_args():
         "-c",
         "--chain", 
         help="Chain file"
-        "*.chain or *.chain.gz are accepted", 
+        ". *.chain or *.chain.gz are accepted", 
         required=True,
         type=str
         )
@@ -335,7 +335,7 @@ def parse_args():
         "-s", 
         "--sizes", 
         help="Chromosome sizes file"
-        "should have two columns: chromosome and size", 
+        ". Should have two columns: chromosome and size", 
         required=True,
         type=str
         )
@@ -349,7 +349,7 @@ def parse_args():
     app.add_argument(
         "-sf",
         "--shared_folder",
-        help="Shared folder name",
+        help="Shared folder name used by the VM",
         required=False,
         type=str
     )
