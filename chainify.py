@@ -61,7 +61,7 @@ BIG_DATA_URL = "bigDataUrl="
 LINK_DATA_URL = "linkDataUrl="
 TRACK_TYPE = "track type=bigChain"
 LOCALHOST = "http://127.0.0.1:1234/folders"
-SHARED_FOLDER = "sf_Documents" #Assuming its Documents
+SHARED_FOLDER = "Documents" #Assuming its Documents
 
 
 
@@ -298,24 +298,35 @@ class Chain:
             print("VirtualBox is not installed. "
                 f"Please visit {HTTPS_VBOX} for more information")
             return FAILURE
-        
-                
+
+
+
     def run(self, args):
         f = open(os.path.join(TEMP_DIR, OUT), "w")
         if self._make_chain_from_gene(args) == SUCCESS:
             if self.hg_load_chain(args):
                 self.bed_to_bigbed(args)
                 self._check_gbib()
-                if args.shared_folder:
-                    path = "/".join([LOCALHOST, SHARED_FOLDER])
+                if not args.shared_folder:
+                    sf = "_".join(["sf", SHARED_FOLDER])
+                    path = "/".join([LOCALHOST, sf])
                     link = f"{TRACK_TYPE} {BIG_DATA_URL}{os.path.join(path, BIG_BED_OUTPUT)} {LINK_DATA_URL} {os.path.join(path, BIG_CHAIN_OUTPUT)}"
                     f.write(link)
+
+                    shutil.move(os.path.join(TEMP_DIR, BIG_BED_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
+                    shutil.move(os.path.join(TEMP_DIR, BIG_CHAIN_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
+
                     print("Chainify finished successfully."
                         f"Results are available at: {os.path.join(TEMP_DIR, OUT)}")
                 else:
+                    sf = "_".join(["sf", args.shared_folder])
                     path = "/".join([LOCALHOST, SHARED_FOLDER])
                     link = f"{TRACK_TYPE} {BIG_DATA_URL}{os.path.join(path, BIG_BED_OUTPUT)} {LINK_DATA_URL} {os.path.join(path, BIG_CHAIN_OUTPUT)}"
                     f.write(link)
+
+                    shutil.move(os.path.join(TEMP_DIR, BIG_BED_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
+                    shutil.move(os.path.join(TEMP_DIR, BIG_CHAIN_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
+
                     print("### Chainify finished successfully. ###")
                     print(f"Results are available at: {os.path.join(TEMP_DIR, OUT)}")
 
