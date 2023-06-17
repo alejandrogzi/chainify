@@ -46,7 +46,7 @@ chain 2755244274 chrX 154259566 + 112383 154241906 chrX 127069619 + 28712 126971
 43      0       1
 ```
 
-2. The chromosome sizes file could be in any text format (.txt, .tsv, ...), including the .2bit output format name '.chrom.sizes'. Regarding any of the extensions, your file must have the word '.chrom.' in the name.
+2. The chromosome sizes file could be in any text format (.txt, .tsv, ...), including the .2bit default output format named '.chrom.sizes'. Regarding any of the extensions, your file must have the word '.chrom.' in the name.
 
 `cat example.chrom.sizes`
 
@@ -61,7 +61,7 @@ chr5    89573405
 ```
 4. Gene names can be specified directly as an argument by just typing them as comma-separated values (if working with multiple genes).
 
-   **Note that when I talk about 'gene names' I refer to Ensembl IDs (e.g. ENST00000373688.209092) only.** As chainify is a tool that facilitates the processing of alignment chains, gene names must be accompanied by their chain projection (joined by '.'), just like the example. Chainify uses the chain ID to look through the '.chain' file and find the desired chain to convert.
+   **Note that 'gene names' is used to reference Ensembl IDs (e.g. ENST00000373688.209092) only.** As chainify is a tool that facilitates the processing of alignment chains, gene names must be accompanied by their chain projection (joined by '.'), just like the example. Chainify uses the chain ID to look through the '.chain' file and find the desired chain to convert.
 
 ### Example:
 
