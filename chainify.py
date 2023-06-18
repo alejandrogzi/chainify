@@ -81,8 +81,9 @@ class Chain:
         
         print("\n")
         print("#### Chainify initiated successfully! ####")
-        print("\n")        
-        
+        print("\n")  
+
+
 
     def die(self, msg, rc=1):
         """Print error message and exit."""
@@ -236,13 +237,12 @@ class Chain:
         big_chain = open("chain.bigChain", "w")
         
         for line in chain:
-            re.sub(r'\.000000', "", line)
-            line = line.strip().split()
+            line = re.sub(r'\.000000', "", line).strip().split()
             new_line = [
                 line[1], line[3], line[4], line[10], '1000',
                 line[7], line[2], line[5], line[6], line[8], line[9], line[0]
             ]
-            big_chain.write("\t".join(new_line) + "\n")
+            big_chain.write("\t".join(new_line))
 
         shutil.move("chain.tab", TEMP_DIR)
         shutil.move("link.tab", TEMP_DIR)
@@ -250,7 +250,7 @@ class Chain:
 
         print("bigChain file created successfully.")
         return SUCCESS
-
+    
 
 
     def bed_to_bigbed(self, args):
@@ -261,6 +261,7 @@ class Chain:
 
         f = open(LINK_TAB, "r")
         o = open(BIG_LINK_OUTPUT, "w")
+
         link_list = []
         for line in f:
             fields = line.strip().split()
@@ -272,8 +273,8 @@ class Chain:
         print("bigLink file created successfully.")
 
         print("making the bigBedLink file from the bigChain file...")
-        cmd = f"{BED_TO_BIGBED} {BIG_BED_TYPE_FOUR} -as={BIG_LINK} -tab {TEMP_DIR}/chain.bigChain {args.sizes} {TEMP_DIR}/{BIG_CHAIN_OUTPUT}"
-        rs = self.run_cmd(cmd)
+        cmd = f"{BED_TO_BIGBED} {BIG_BED_TYPE_FOUR} -as={BIG_LINK} -tab {os.path.join(TEMP_DIR,BIG_LINK_OUTPUT)} {args.sizes} {os.path.join(TEMP_DIR,BIG_CHAIN_OUTPUT)}"
+        rs = subprocess.Popen(cmd, shell=True)
         print("bigBedLink file created successfully.")
 
         return
