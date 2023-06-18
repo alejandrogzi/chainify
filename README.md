@@ -75,7 +75,7 @@ Chainify assumes that GBiB running locally has '~/Documents' as the shared folde
 
 This chainifier saves the results as a .txt file named "out" located within `~/chainify/temp/modules`. The output file stores the track type, urls directing to the chain linked converted files and optionally a name, description provided by the user.
 
-`track type=bigChain bidDataUrl=/path/to/bigChain.bb linkDataUrl= /path/to/bigChain.link.bb description="An example" name="Test chain"`
+`track type=bigChain bidDataUrl=/path/to/bigChain.bb linkDataUrl=/path/to/bigChain.link.bb description="An example" name="Test chain"`
 
 As GBiB allows the usage of local files, only open the localhost to Genome Browser and paste the information provided by chainify! 
 
