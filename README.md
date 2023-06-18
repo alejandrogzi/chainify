@@ -79,7 +79,7 @@ This chainifier saves the results as a .txt file named "out" located within `~/c
 
 As GBiB allows the usage of local files, only open the localhost to Genome Browser and paste the information provided by chainify! 
 
-![chainify example](https://github.com/alejandrogzi/chainify/modules/supply/Chainify_example.jpg)
+![chainify example](https://github.com/alejandrogzi/chainify/blob/main/modules/supply/Chainify_example.jpg)
 
 ## License
 
