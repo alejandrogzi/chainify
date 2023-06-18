@@ -313,23 +313,17 @@ class Chain:
                     path = "/".join([LOCALHOST, sf])
                     link = f"{TRACK_TYPE} {BIG_DATA_URL}{os.path.join(path, BIG_BED_OUTPUT)} {LINK_DATA_URL} {os.path.join(path, BIG_CHAIN_OUTPUT)}"
                     f.write(link)
-
-                    shutil.move(os.path.join(TEMP_DIR, BIG_BED_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
-                    shutil.move(os.path.join(TEMP_DIR, BIG_CHAIN_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
-
-                    print("Chainify finished successfully."
-                        f"Results are available at: {os.path.join(TEMP_DIR, OUT)}")
                 else:
                     sf = "_".join(["sf", args.shared_folder])
                     path = "/".join([LOCALHOST, SHARED_FOLDER])
                     link = f"{TRACK_TYPE} {BIG_DATA_URL}{os.path.join(path, BIG_BED_OUTPUT)} {LINK_DATA_URL} {os.path.join(path, BIG_CHAIN_OUTPUT)}"
                     f.write(link)
 
-                    shutil.move(os.path.join(TEMP_DIR, BIG_BED_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
-                    shutil.move(os.path.join(TEMP_DIR, BIG_CHAIN_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
+                shutil.move(os.path.join(TEMP_DIR, BIG_BED_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
+                shutil.move(os.path.join(TEMP_DIR, BIG_CHAIN_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
 
-                    print("### Chainify finished successfully. ###")
-                    print(f"Results are available at: {os.path.join(TEMP_DIR, OUT)}")
+                print("### Chainify finished successfully. ###")
+                print(f"Results are available at: {os.path.join(TEMP_DIR, OUT)}")
 
 
 
