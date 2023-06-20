@@ -19,8 +19,9 @@ cd modules
 Chainify is a tool that automates the converting process of a genome aligment chain in a graphic format recognized by the UCSC Genome Browser. It utilizes the Genome Browser in a Box - a small virtualized version of UCSC Genome Browser that runs locally - making it easier for people that does not have the possibility to host their files in a server/cloud/etc. The input files needed to run chainify are:
 
 ```
-usage: chainify.py [-h] -c CHAIN -s SIZES -g GENE [-sf SHARED_FOLDER]
+usage: chainify.py [-h] -c CHAIN -s SIZES -g GENE [-sf SHARED_FOLDER] [-cl CLEAN] [-n NAME] [-d DESCRIPTION]
 
+optional arguments:
   -h, --help            show this help message and exit
   -c CHAIN, --chain CHAIN
                         Chain file. *.chain or *.chain.gz are accepted
@@ -29,6 +30,11 @@ usage: chainify.py [-h] -c CHAIN -s SIZES -g GENE [-sf SHARED_FOLDER]
   -g GENE, --gene GENE  Gene name(s) (comma-separated)
   -sf SHARED_FOLDER, --shared_folder SHARED_FOLDER
                         Shared folder name used by the VM
+  -cl CLEAN, --clean CLEAN
+                        Clean all the temp files from path
+  -n NAME, --name NAME  Name of the track
+  -d DESCRIPTION, --description DESCRIPTION
+                        Description of the track
 ```
 
 where:
