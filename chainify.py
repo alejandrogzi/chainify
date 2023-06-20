@@ -14,8 +14,10 @@ import modules.dependencies as dp
 
 
 
+
 __author__ = "Alejandro Gonzales-Irribarren"
 __email__ = "jose.gonzalesdezavala1@unmsm.edu.pe"
+
 
 
 
@@ -135,8 +137,8 @@ class Chain:
         if args.gene:
             gene_list = args.gene.split(",")
             if len(gene_list) > 1:
-                print(f"{len(gene_list)} genes provided"
-                    f"Genes provided: {gene_list}")
+                print(f"{len(gene_list)} genes provided.")
+                print(f"Genes provided: {gene_list}")
                 return MULTIPLE
             elif len(gene_list) == 1:
                 print(f"Gene provided: {gene_list}")
@@ -153,7 +155,6 @@ class Chain:
         if args.chain:
             chain_attributes = args.chain.split(".")
             if any(x == "gz" for x in chain_attributes):
-                print("Chain file is compressed")
                 return COMPRESSED
             else:
                 return UNCOMPRESSED
@@ -195,41 +196,61 @@ class Chain:
         """Run command and return stdout."""
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
         return result.stdout
-            
+
+
+
+    def get_chain_coordinates(self, args, chain_id):
+            """Looks for a chain_id in the chain file and return its metadata and coordinates"""
+            awk_inner = f'$NF == "{chain_id}" {{print $1, $2, $3}}'
+            awk_metadata = f'$NF == "{chain_id}" {{print $0}}'
+            chain_metadata = self.run_cmd(f'zgrep -w "{chain_id}" {args.chain} | awk \'{awk_metadata}\'').strip()
+
+            print(f"Looking for chain {chain_id}...")
+
+            if self.__check_chain_file(args) == COMPRESSED:
+                awk_rs = self.run_cmd(f'zgrep -w "{chain_id}" {args.chain} | awk \'{awk_inner}\'').strip()
+                cmd = f'zcat {args.chain} | awk \'/^{awk_rs}/{{extract=1; next}} /^chain/{{extract=0}} extract\''
+                chain_coordinates = self.run_cmd(cmd)
+            else:
+                awk_rs = self.run_cmd(f'grep -w "{chain_id}" {args.chain} | awk \'{awk_inner}\'').strip()
+                cmd = f'cat {args.chain} | awk \'/^{awk_rs}/{{extract=1; next}} /^chain/{{extract=0}} extract\''
+                chain_coordinates = self.run_cmd(cmd)
+
+            return (chain_metadata, chain_coordinates)
+
 
 
     def _make_chain_from_gene(self, args):
         """Make chain file from gene."""
         if args.gene:
             if self.__check_args(args) != MULTIPLE:
-                f = open(os.path.join(TEMP_DIR, f"{args.gene}.chain"), "w")
+                f = open(os.path.join(TEMP_DIR, f"{args.gene}.temp.chain"), "w")
                 chain_id = args.gene.split(".")[1]
-                awk_inner = f'$NF == "{chain_id}" {{print $1, $2, $3}}'
-                awk_metadata = f'$NF == "{chain_id}" {{print $0}}'
-                chain_metadata = self.run_cmd(f'zgrep -w "{chain_id}" {args.chain} | awk \'{awk_metadata}\'').strip()
-                print(f"Looking for chain {chain_id}...")
-
-                if self.__check_chain_file(args) == COMPRESSED:
-                    awk_rs = self.run_cmd(f'zgrep -w "{chain_id}" {args.chain} | awk \'{awk_inner}\'').strip()
-                    cmd = f'zcat {args.chain} | awk \'/^{awk_rs}/{{extract=1; next}} /^chain/{{extract=0}} extract\''
-                    chain_coordinates = self.run_cmd(cmd)
-                else:
-                    awk_rs = self.run_cmd(f'grep -w "{chain_id}" {args.chain} | awk \'{awk_inner}\'').strip()
-                    cmd = f'cat {args.chain} | awk \'/^{awk_rs}/{{extract=1; next}} /^chain/{{extract=0}} extract\''
-                    chain_coordinates = self.run_cmd(cmd)
-
-                print("Creating new gene chain file...")
-                f.write(chain_metadata + "\n" + chain_coordinates)
+                k,v = self.get_chain_coordinates(args, chain_id)
+                f.write(k + "\n" + v)
                 print("Gene chain file created successfully.")
 
-                return SUCCESS
+            else:
+                m = open(os.path.join(TEMP_DIR, "genes.temp.chain"), "w")
+                genes = args.gene.split(",")
+                for gn in genes:
+                    chain_id = gn.split(".")[1]
+                    k,v = self.get_chain_coordinates(args, chain_id)
+                    m.write(k + "\n" + v.rstrip() + "\n")
+                print("Gene chain file created successfully.")
+                    
+            return SUCCESS
 
 
 
     def hg_load_chain(self, args):
         """Make bigChain file from chain file."""
         print("making bigChain file from the main chain file...")
-        file = os.path.join(TEMP_DIR, f"{args.gene}.chain")
+        if self.__check_args(args) != MULTIPLE:
+            file = os.path.join(TEMP_DIR, f"{args.gene}.temp.chain")
+        else:
+            file = os.path.join(TEMP_DIR, "genes.temp.chain")
+
         cmd = f"{HG_LOAD_CHAIN} {LOAD_CHAIN_ARGS} {LOAD_CHAIN_GENOME} {LOAD_CHAIN_FORMAT} {file}"
         rs = self.run_cmd(cmd)
 
@@ -242,7 +263,7 @@ class Chain:
                 line[1], line[3], line[4], line[10], '1000',
                 line[7], line[2], line[5], line[6], line[8], line[9], line[0]
             ]
-            big_chain.write("\t".join(new_line))
+            big_chain.write("\t".join(new_line) + "\n")
 
         shutil.move("chain.tab", TEMP_DIR)
         shutil.move("link.tab", TEMP_DIR)
@@ -302,25 +323,54 @@ class Chain:
 
 
 
+    def clean_up(self, args):
+        """ Deletes all intermediate files """
+        if not args.clean:
+            shutil.rmtree(TEMP_DIR)
+            print("Cleaning all temp files...")
+            return SUCCESS
+        else:
+            return None
+
+
+
+    def make_link(self, args):
+            """ Builds the input link to Genome Browser """
+            f = open(os.path.join(TEMP_DIR, OUT), "w")
+            if not args.shared_folder:
+                sf = "_".join(["sf", SHARED_FOLDER])
+                path = "/".join([LOCALHOST, sf])
+            else:
+                sf = "_".join(["sf", args.shared_folder])
+                path = "/".join([LOCALHOST, SHARED_FOLDER])
+            
+            link = f"{TRACK_TYPE} {BIG_DATA_URL}{os.path.join(path, BIG_BED_OUTPUT)} {LINK_DATA_URL}{os.path.join(path, BIG_CHAIN_OUTPUT)}"   
+
+            if args.name:
+                name = f" name={args.name}"
+                link += name
+
+            if args.description:
+                desc = f" description={args.description}"
+                link += desc
+
+            f.write(link)
+            return SUCCESS
+
+
+
     def run(self, args):
         f = open(os.path.join(TEMP_DIR, OUT), "w")
         if self._make_chain_from_gene(args) == SUCCESS:
             if self.hg_load_chain(args):
                 self.bed_to_bigbed(args)
                 self._check_gbib()
-                if not args.shared_folder:
-                    sf = "_".join(["sf", SHARED_FOLDER])
-                    path = "/".join([LOCALHOST, sf])
-                    link = f"{TRACK_TYPE} {BIG_DATA_URL}{os.path.join(path, BIG_BED_OUTPUT)} {LINK_DATA_URL}{os.path.join(path, BIG_CHAIN_OUTPUT)}"
-                    f.write(link)
-                else:
-                    sf = "_".join(["sf", args.shared_folder])
-                    path = "/".join([LOCALHOST, SHARED_FOLDER])
-                    link = f"{TRACK_TYPE} {BIG_DATA_URL}{os.path.join(path, BIG_BED_OUTPUT)} {LINK_DATA_URL}{os.path.join(path, BIG_CHAIN_OUTPUT)}"
-                    f.write(link)
+                self.make_link(args)
 
                 shutil.move(os.path.join(TEMP_DIR, BIG_BED_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
                 shutil.move(os.path.join(TEMP_DIR, BIG_CHAIN_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
+                            
+                self.clean_up(args)
 
                 print("### Chainify finished successfully. ###")
                 print(f"Results are available at: {os.path.join(TEMP_DIR, OUT)}")
@@ -359,6 +409,29 @@ def parse_args():
         required=False,
         type=str
     )
+    app.add_argument(
+        "-cl",
+        "--clean",
+        help="Clean all the temp files from path",
+        default=False,
+        required=False,
+        type=str
+    )
+    app.add_argument(
+        "-n",
+        "--name",
+        help="Name of the track",
+        required=False,
+        type=str
+    )
+    app.add_argument(
+        "-d",
+        "--description",
+        help="Description of the track",
+        required=False,
+        type=str
+    )
+
 
     if len(sys.argv) < 2:
         app.print_help()
