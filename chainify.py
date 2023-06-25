@@ -29,6 +29,7 @@ MODULES = "modules"
 BINARIES = os.path.join(LOCATION, MODULES, BIN)
 TEMP_DIR = os.path.join(LOCATION, MODULES, TEMP)
 GITHUB = "https://github.com/alejandrogzi/chainify.git"
+RESULTS = os.path.join(LOCATION,"results")
 OUT = "out.txt"
 
 BED_TO_BIGBED = os.path.join(BINARIES,"bedToBigBed")
@@ -201,20 +202,23 @@ class Chain:
 
     def get_chain_coordinates(self, args, chain_id):
             """Looks for a chain_id in the chain file and return its metadata and coordinates"""
-            awk_inner = f'$NF == "{chain_id}" {{print $1, $2, $3}}'
-            awk_metadata = f'$NF == "{chain_id}" {{print $0}}'
-            chain_metadata = self.run_cmd(f'zgrep -w "{chain_id}" {args.chain} | awk \'{awk_metadata}\'').strip()
+            if self.__check_chain_file(args) == COMPRESSED:
+                grep = "zgrep"
+                cat = "zcat"
+            else:
+                grep = "grep"
+                cat = "cat"
 
+            awk_metadata = f'$NF == "{chain_id}" {{print $0}}'
+            metadata = self.run_cmd(f'{grep} -w "{chain_id}" {args.chain} | awk \'{awk_metadata}\'').strip()
+            chain_metadata =''.join([k for k in metadata.split("\n") if k.startswith("chain")])
+            
             print(f"Looking for chain {chain_id}...")
 
-            if self.__check_chain_file(args) == COMPRESSED:
-                awk_rs = self.run_cmd(f'zgrep -w "{chain_id}" {args.chain} | awk \'{awk_inner}\'').strip()
-                cmd = f'zcat {args.chain} | awk \'/^{awk_rs}/{{extract=1; next}} /^chain/{{extract=0}} extract\''
-                chain_coordinates = self.run_cmd(cmd)
-            else:
-                awk_rs = self.run_cmd(f'grep -w "{chain_id}" {args.chain} | awk \'{awk_inner}\'').strip()
-                cmd = f'cat {args.chain} | awk \'/^{awk_rs}/{{extract=1; next}} /^chain/{{extract=0}} extract\''
-                chain_coordinates = self.run_cmd(cmd)
+            #awk_inner = f'$NF == "{" ".join(chain_metadata.split(" ")[:4])}" {{print $1, $2, $3}}'
+            #awk_rs = self.run_cmd(f'{grep} -w "{" ".join(chain_metadata.split(" ")[:4])}" {args.chain} | awk \'{awk_inner}\'').strip()
+            cmd = f'{cat} {args.chain} | awk \'/^{" ".join(chain_metadata.split(" ")[:4])}/{{extract=1; next}} /^chain/{{extract=0}} extract\''
+            chain_coordinates = self.run_cmd(cmd)
 
             return (chain_metadata, chain_coordinates)
 
@@ -296,6 +300,7 @@ class Chain:
         print("making the bigBedLink file from the bigChain file...")
         cmd = f"{BED_TO_BIGBED} {BIG_BED_TYPE_FOUR} -as={BIG_LINK} -tab {os.path.join(TEMP_DIR,BIG_LINK_OUTPUT)} {args.sizes} {os.path.join(TEMP_DIR,BIG_CHAIN_OUTPUT)}"
         rs = subprocess.Popen(cmd, shell=True)
+        rs.wait()
         print("bigBedLink file created successfully.")
 
         return
@@ -336,7 +341,10 @@ class Chain:
 
     def make_link(self, args):
             """ Builds the input link to Genome Browser """
-            f = open(os.path.join(TEMP_DIR, OUT), "w")
+            if not os.path.isdir(RESULTS):
+                os.makedirs(RESULTS, exist_ok=True)
+
+            f = open(os.path.join(RESULTS, OUT), "w")
             if not args.shared_folder:
                 sf = "_".join(["sf", SHARED_FOLDER])
                 path = "/".join([LOCALHOST, sf])
@@ -373,7 +381,7 @@ class Chain:
                 self.clean_up(args)
 
                 print("### Chainify finished successfully. ###")
-                print(f"Results are available at: {os.path.join(TEMP_DIR, OUT)}")
+                print(f"Results are available at: {os.path.join(RESULTS, OUT)}")
 
 
 
