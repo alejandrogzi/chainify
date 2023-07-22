@@ -89,7 +89,7 @@ or
 
 `./chainify.py -c ${chain} -s ${chrom_sizes} -m chromosome -chr ${chromosome}`
 
-	**Note that this feature is designed to only accept one chromosome, it does not support multiple chromosomes yet.**
+   **Note that this feature is designed to only accept one chromosome, it does not support multiple chromosomes yet.**
 
 4.3 **Genome mode:** Genome mode is designed to process any .chain file without filtering, it only needs the -m parameter without any further requirements than those detailed above:
 
