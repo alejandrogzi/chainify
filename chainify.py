@@ -54,6 +54,9 @@ UNCOMPRESSED = "uncompressed"
 COMPRESSED = "compressed"
 SUCCESS = "success"
 FAILURE = "failure"
+GENE = "gene"
+GENOME = "genome"
+CHROMOSOME = "chromosome"
 
 VBOX = "VBoxManage"
 VERSION = "--version"
@@ -250,12 +253,24 @@ class Chain:
     def hg_load_chain(self, args):
         """Make bigChain file from chain file."""
         print("making bigChain file from the main chain file...")
-        if self.__check_args(args) != MULTIPLE:
-            file = os.path.join(TEMP_DIR, f"{args.gene}.temp.chain")
+        if args.mode == GENE:
+            if self.__check_args(args) != MULTIPLE:
+                file = os.path.join(TEMP_DIR, f"{args.gene}.temp.chain")
+            else:
+                file = os.path.join(TEMP_DIR, "genes.temp.chain")
         else:
-            file = os.path.join(TEMP_DIR, "genes.temp.chain")
+            if self.__check_chain_file(args) == COMPRESSED:
+                cmd = f"zcat {args.chain} > {os.path.join(TEMP_DIR, str(args.chain).split('.gz')[0])}"
+                self.run_cmd(cmd)
+                file = os.path.join(TEMP_DIR, str(args.chain).split('.gz')[0])
+            else:
+                file = args.chain
 
-        cmd = f"{HG_LOAD_CHAIN} {LOAD_CHAIN_ARGS} {LOAD_CHAIN_GENOME} {LOAD_CHAIN_FORMAT} {file}"
+        if args.mode != GENE:
+            query_chain = open(file, "r")
+            chr_file = self.make_chromosome_chain(args, query_chain)
+            cmd = f"{HG_LOAD_CHAIN} {LOAD_CHAIN_ARGS} {LOAD_CHAIN_GENOME} {LOAD_CHAIN_FORMAT} {chr_file}"
+
         rs = self.run_cmd(cmd)
 
         chain = open("chain.tab", "r")
@@ -275,14 +290,15 @@ class Chain:
 
         print("bigChain file created successfully.")
         return SUCCESS
-    
+
 
 
     def bed_to_bigbed(self, args):
         """Make bigBed and bigBedLink file from bigChain file."""
         print("making the bigBed file from the bigChain file...")
         cmd = f"{BED_TO_BIGBED} {BIG_BED_TYPE_SIX} -as={BIG_CHAIN} -tab {TEMP_DIR}/chain.bigChain {args.sizes} {TEMP_DIR}/{BIG_BED_OUTPUT}"
-        rs = self.run_cmd(cmd)
+        rs = subprocess.Popen(cmd, shell=True)
+        rs.wait()
 
         f = open(LINK_TAB, "r")
         o = open(BIG_LINK_OUTPUT, "w")
@@ -304,6 +320,59 @@ class Chain:
         print("bigBedLink file created successfully.")
 
         return
+
+
+
+    def mode(self, args):
+        """Check whether the mode is specified or is gene or genome."""
+        if not args.mode:
+            return GENE
+        else:
+            if args.mode not in [GENE, GENOME, CHROMOSOME]:
+                self.die("Mode not recognized. Please use gene or genome.")
+            elif args.mode == GENOME:
+                return GENOME
+            elif args.mode == CHROMOSOME:
+                return CHROMOSOME
+            else:
+                return GENE
+
+
+
+    def make_chromosome_chain(self, args, file):
+        """ Make chain file for a given chromosome """  
+        if args.chromosome:
+            print(f"Extracting alignments from {args.chromosome}...")
+            name = args.chromosome
+        else:
+            print(f"Filtering negative chain scores from {args.chain}...")
+            name = f"{args.chain.split('.chain')[0]}_noneg"
+        chain_dict = {}
+        current_chain = None
+        chr_chain = open(f"{TEMP_DIR}/{name}.chain", "w")
+
+        for line in file:
+            if line.startswith("chain"):
+                current_chain = line.strip()
+                if int(current_chain.split(" ")[1]) > 0:
+                    chain_dict[current_chain] = []
+                else:
+                    current_chain = None
+            else:
+                if current_chain:
+                    chain_dict[current_chain].append(line.strip())
+
+    
+        for k,v in chain_dict.items():
+            if args.chromosome:
+                if k.split(" ")[2] == args.chromosome:
+                    chr_chain.write(k + "\n" + "\n".join(v) + "\n")
+            else:
+                chr_chain.write(k + "\n" + "\n".join(v) + "\n")
+
+        chr_chain.close()
+        #name = os.path.join(TEMP_DIR, chr_chain.name)
+        return chr_chain.name
 
 
 
@@ -369,19 +438,24 @@ class Chain:
 
     def run(self, args):
         f = open(os.path.join(TEMP_DIR, OUT), "w")
-        if self._make_chain_from_gene(args) == SUCCESS:
-            if self.hg_load_chain(args):
-                self.bed_to_bigbed(args)
-                self._check_gbib()
-                self.make_link(args)
+        if self.mode(args) == GENE:
+            if self._make_chain_from_gene(args) == SUCCESS:
+                if self.hg_load_chain(args):
+                    self.bed_to_bigbed(args)
+                    self._check_gbib()
+        else:
+            self.hg_load_chain(args)
+            self.bed_to_bigbed(args)
+            self._check_gbib()
 
-                shutil.move(os.path.join(TEMP_DIR, BIG_BED_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
-                shutil.move(os.path.join(TEMP_DIR, BIG_CHAIN_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
-                            
-                self.clean_up(args)
 
-                print("### Chainify finished successfully. ###")
-                print(f"Results are available at: {os.path.join(RESULTS, OUT)}")
+        self.make_link(args)
+        shutil.move(os.path.join(TEMP_DIR, BIG_BED_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
+        shutil.move(os.path.join(TEMP_DIR, BIG_CHAIN_OUTPUT), os.path.join(os.path.expanduser('~'), SHARED_FOLDER))
+        self.clean_up(args)
+
+        print("### Chainify finished successfully. ###")
+        print(f"Results are available at: {os.path.join(RESULTS, OUT)}")
 
 
 
@@ -407,7 +481,7 @@ def parse_args():
         "-g", 
         "--gene", 
         help="Gene name(s) (comma-separated)", 
-        required=True,
+        required=False,
         type=str
         )
     app.add_argument(
@@ -439,12 +513,30 @@ def parse_args():
         required=False,
         type=str
     )
-
+    app.add_argument(
+        "-m",
+        "--mode",
+        help="Chanify mode: gene or whole genome",
+        required=False,
+        type=str
+    )
+    app.add_argument(
+        "-chr",
+        "--chromosome",
+        help="Chromosome name",
+        required=False,
+        type=str
+    )
 
     if len(sys.argv) < 2:
         app.print_help()
         sys.exit(0)
+
     args = app.parse_args()
+
+    if args.mode == CHROMOSOME and not args.chromosome:
+        error_msg = ("Chromosome not provided. Please provide a chromosome.")
+        sys.exit(error_msg)
 
     return args
 
