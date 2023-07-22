@@ -1,6 +1,6 @@
 # Chainify
 
-**Chainify** is a solution for generating pairwise genome alignment chain plots using UCSC's Genome Browser in a Box (GBiB). This tool can be used to create ready-to-plot alignments for specific genes or gene lists.
+**Chainify** is a solution for generating pairwise genome alignment chain plots using UCSC's Genome Browser in a Box (GBiB). This tool can be used to create ready-to-plot alignments for specific gene(s), chromosomes and complete genomes.
 
 ## Usage
 
